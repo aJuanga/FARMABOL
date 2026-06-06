@@ -1,47 +1,44 @@
 const db = require('../database');
+const { validarVenta, findProductOr404 } = require('../utils/helpers');
 
 // POST /api/sales  (registrar venta: valida stock, descuenta y guarda en transacción)
 function createSale(req, res) {
   const { product_id, cantidad } = req.body;
 
-  // Validación de campos (duplicada a propósito)
-  if (product_id === undefined || product_id === null || isNaN(Number(product_id))) {
-    return res.status(400).json({ error: 'El campo product_id es obligatorio' });
-  }
-  if (cantidad === undefined || cantidad === null || isNaN(Number(cantidad)) || Number(cantidad) <= 0) {
-    return res.status(400).json({ error: 'El campo cantidad debe ser un número mayor a 0' });
-  }
+  const error = validarVenta(req.body);
+  if (error) return res.status(400).json({ error });
 
-  // Validación: buscar producto o devolver 404 (duplicada a propósito)
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(product_id));
-  if (!product) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
+  const product = findProductOr404(product_id, res);
+  if (!product) return;
 
-  // Validar stock disponible
-  if (product.stock < Number(cantidad)) {
+  const cant = Number(cantidad);
+  if (product.stock < cant) {
     return res
       .status(400)
       .json({ error: `Stock insuficiente para "${product.nombre}" (disponible: ${product.stock})` });
   }
 
-  const cant = Number(cantidad);
-  const precioUnit = product.precio;
-  const total = precioUnit * cant;
+  const ventaId = registrarVenta(product, cant, req.user.id);
+  res.status(201).json(buscarVentaDetalle(ventaId));
+}
 
-  // Transacción: descontar stock + guardar venta de forma atómica
-  const registrar = db.transaction(() => {
+// Transacción: descontar stock + guardar venta de forma atómica
+function registrarVenta(product, cant, userId) {
+  const total = product.precio * cant;
+  const tx = db.transaction(() => {
     db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?').run(cant, product.id);
     const info = db
       .prepare(
         'INSERT INTO sales (product_id, user_id, cantidad, precio_unit, total) VALUES (?, ?, ?, ?, ?)'
       )
-      .run(product.id, req.user.id, cant, precioUnit, total);
+      .run(product.id, userId, cant, product.precio, total);
     return info.lastInsertRowid;
   });
+  return tx();
+}
 
-  const ventaId = registrar();
-  const venta = db
+function buscarVentaDetalle(id) {
+  return db
     .prepare(
       `SELECT s.*, p.nombre AS producto, u.nombre AS vendedor
        FROM sales s
@@ -49,9 +46,7 @@ function createSale(req, res) {
        JOIN users u ON u.id = s.user_id
        WHERE s.id = ?`
     )
-    .get(ventaId);
-
-  res.status(201).json(venta);
+    .get(id);
 }
 
 // GET /api/sales  (listar ventas)

@@ -1,4 +1,5 @@
 const db = require('../database');
+const { validarProducto, findProductOr404 } = require('../utils/helpers');
 
 // GET /api/products  (todos los roles)
 function listProducts(req, res) {
@@ -8,35 +9,17 @@ function listProducts(req, res) {
 
 // GET /api/products/:id  (todos los roles)
 function getProduct(req, res) {
-  const id = Number(req.params.id);
-
-  // Validación: buscar producto o devolver 404 (duplicada a propósito)
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
-  if (!product) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
-
+  const product = findProductOr404(req.params.id, res);
+  if (!product) return;
   res.json(product);
 }
 
 // POST /api/products  (solo ADMIN)
 function createProduct(req, res) {
+  const error = validarProducto(req.body);
+  if (error) return res.status(400).json({ error });
+
   const { codigo, nombre, precio, stock, laboratorio } = req.body;
-
-  // Validación de campos (duplicada a propósito)
-  if (!codigo || codigo.trim() === '') {
-    return res.status(400).json({ error: 'El campo codigo es obligatorio' });
-  }
-  if (!nombre || nombre.trim() === '') {
-    return res.status(400).json({ error: 'El campo nombre es obligatorio' });
-  }
-  if (precio === undefined || precio === null || isNaN(Number(precio)) || Number(precio) < 0) {
-    return res.status(400).json({ error: 'El campo precio debe ser un número mayor o igual a 0' });
-  }
-  if (stock === undefined || stock === null || isNaN(Number(stock)) || Number(stock) < 0) {
-    return res.status(400).json({ error: 'El campo stock debe ser un número mayor o igual a 0' });
-  }
-
   try {
     const info = db
       .prepare(
@@ -55,48 +38,27 @@ function createProduct(req, res) {
 
 // PUT /api/products/:id  (solo ADMIN)
 function updateProduct(req, res) {
-  const id = Number(req.params.id);
+  const product = findProductOr404(req.params.id, res);
+  if (!product) return;
+
+  const error = validarProducto(req.body);
+  if (error) return res.status(400).json({ error });
+
   const { codigo, nombre, precio, stock, laboratorio } = req.body;
-
-  // Validación: buscar producto o devolver 404 (duplicada a propósito)
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
-  if (!product) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
-
-  // Validación de campos (duplicada a propósito)
-  if (!codigo || codigo.trim() === '') {
-    return res.status(400).json({ error: 'El campo codigo es obligatorio' });
-  }
-  if (!nombre || nombre.trim() === '') {
-    return res.status(400).json({ error: 'El campo nombre es obligatorio' });
-  }
-  if (precio === undefined || precio === null || isNaN(Number(precio)) || Number(precio) < 0) {
-    return res.status(400).json({ error: 'El campo precio debe ser un número mayor o igual a 0' });
-  }
-  if (stock === undefined || stock === null || isNaN(Number(stock)) || Number(stock) < 0) {
-    return res.status(400).json({ error: 'El campo stock debe ser un número mayor o igual a 0' });
-  }
-
   db.prepare(
     'UPDATE products SET codigo = ?, nombre = ?, precio = ?, stock = ?, laboratorio = ? WHERE id = ?'
-  ).run(codigo, nombre, Number(precio), Number(stock), laboratorio || null, id);
+  ).run(codigo, nombre, Number(precio), Number(stock), laboratorio || null, product.id);
 
-  const actualizado = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+  const actualizado = db.prepare('SELECT * FROM products WHERE id = ?').get(product.id);
   res.json(actualizado);
 }
 
 // DELETE /api/products/:id  (solo ADMIN)
 function deleteProduct(req, res) {
-  const id = Number(req.params.id);
+  const product = findProductOr404(req.params.id, res);
+  if (!product) return;
 
-  // Validación: buscar producto o devolver 404 (duplicada a propósito)
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
-  if (!product) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
-
-  db.prepare('DELETE FROM products WHERE id = ?').run(id);
+  db.prepare('DELETE FROM products WHERE id = ?').run(product.id);
   res.json({ mensaje: 'Producto eliminado' });
 }
 

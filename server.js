@@ -6,9 +6,13 @@ require('dotenv').config();
 const authRoutes = require('./src/routes/authRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const saleRoutes = require('./src/routes/saleRoutes');
+const runSeed = require('./src/seed');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Carga datos iniciales si la BD está vacía (necesario en Render Free, sin Shell)
+runSeed();
 
 app.use(cors());
 app.use(express.json());

@@ -1,30 +1,13 @@
-// Inserta usuarios y productos de ejemplo.  Ejecuta: npm run seed
+// Inserta usuarios y productos de ejemplo (idempotente).
+// Se ejecuta solo (npm run seed) o automáticamente al arrancar el servidor.
 const bcrypt = require('bcryptjs');
 const db = require('./database');
 
-console.log('🌱 Sembrando datos de FARMABOL...');
-
-// --- Usuarios ---
 const users = [
   { username: 'admin', password: 'admin123', nombre: 'Administrador', rol: 'ADMIN' },
   { username: 'vendedor', password: 'vende123', nombre: 'Vendedor Uno', rol: 'VENDEDOR' },
 ];
 
-for (const u of users) {
-  const existe = db.prepare('SELECT id FROM users WHERE username = ?').get(u.username);
-  if (!existe) {
-    const hash = bcrypt.hashSync(u.password, 10);
-    db.prepare('INSERT INTO users (username, password, nombre, rol) VALUES (?, ?, ?, ?)').run(
-      u.username,
-      hash,
-      u.nombre,
-      u.rol
-    );
-    console.log(`  ✔ Usuario: ${u.username} (${u.rol})`);
-  }
-}
-
-// --- Productos ---
 const products = [
   { codigo: 'MED001', nombre: 'Paracetamol 500mg', precio: 5.5, stock: 120, laboratorio: 'Bago' },
   { codigo: 'MED002', nombre: 'Ibuprofeno 400mg', precio: 8.0, stock: 80, laboratorio: 'Inti' },
@@ -34,15 +17,37 @@ const products = [
   { codigo: 'MED006', nombre: 'Alcohol en gel 250ml', precio: 18.0, stock: 2, laboratorio: 'Vita' },
 ];
 
-for (const p of products) {
-  const existe = db.prepare('SELECT id FROM products WHERE codigo = ?').get(p.codigo);
-  if (!existe) {
-    db.prepare(
-      'INSERT INTO products (codigo, nombre, precio, stock, laboratorio) VALUES (?, ?, ?, ?, ?)'
-    ).run(p.codigo, p.nombre, p.precio, p.stock, p.laboratorio);
-    console.log(`  ✔ Producto: ${p.codigo} - ${p.nombre}`);
+// Siembra datos solo si faltan (seguro de llamar en cada arranque).
+function runSeed() {
+  for (const u of users) {
+    const existe = db.prepare('SELECT id FROM users WHERE username = ?').get(u.username);
+    if (!existe) {
+      const hash = bcrypt.hashSync(u.password, 10);
+      db.prepare('INSERT INTO users (username, password, nombre, rol) VALUES (?, ?, ?, ?)').run(
+        u.username,
+        hash,
+        u.nombre,
+        u.rol
+      );
+    }
+  }
+
+  for (const p of products) {
+    const existe = db.prepare('SELECT id FROM products WHERE codigo = ?').get(p.codigo);
+    if (!existe) {
+      db.prepare(
+        'INSERT INTO products (codigo, nombre, precio, stock, laboratorio) VALUES (?, ?, ?, ?, ?)'
+      ).run(p.codigo, p.nombre, p.precio, p.stock, p.laboratorio);
+    }
   }
 }
 
-console.log('✅ Listo. Credenciales -> admin/admin123  ·  vendedor/vende123');
-db.close();
+module.exports = runSeed;
+
+// Permite ejecutarlo manualmente: npm run seed
+if (require.main === module) {
+  console.log('🌱 Sembrando datos de FARMABOL...');
+  runSeed();
+  console.log('✅ Listo. Credenciales -> admin/admin123  ·  vendedor/vende123');
+  db.close();
+}

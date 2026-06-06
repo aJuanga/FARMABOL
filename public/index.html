@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FARMABOL · Inventario y Ventas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- LOGIN -->
+  <section id="vista-login" class="login">
+    <div class="login__bg"></div>
+    <form id="form-login" class="login__card">
+      <div class="brand">
+        <span class="brand__mark">℞</span>
+        <h1 class="brand__name">FARMA<span>BOL</span></h1>
+      </div>
+      <p class="login__sub">Sistema de inventario y ventas de farmacia</p>
+      <label>Usuario
+        <input type="text" id="login-username" value="admin" required />
+      </label>
+      <label>Contraseña
+        <input type="password" id="login-password" value="admin123" required />
+      </label>
+      <button type="submit" class="btn btn--primary">Ingresar</button>
+      <p id="login-error" class="error"></p>
+      <p class="login__hint">admin / admin123 · vendedor / vende123</p>
+    </form>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="vista-app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand brand--small">
+        <span class="brand__mark">℞</span>
+        <h1 class="brand__name">FARMA<span>BOL</span></h1>
+      </div>
+      <nav class="nav">
+        <button class="nav__item is-active" data-tab="dashboard">📊 Dashboard</button>
+        <button class="nav__item" data-tab="productos">💊 Productos</button>
+        <button class="nav__item" data-tab="venta">🛒 Registrar venta</button>
+        <button class="nav__item" data-tab="ventas">🧾 Ventas</button>
+      </nav>
+      <div class="sidebar__foot">
+        <span id="user-info"></span>
+        <button id="btn-logout" class="btn btn--ghost">Salir</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <div class="tab is-active" data-tab="dashboard">
+        <header class="content__head"><h2>Dashboard</h2></header>
+        <div class="cards" id="cards-resumen"></div>
+        <h3 class="section-title">⚠️ Stock bajo (&lt; 5)</h3>
+        <div id="stock-bajo" class="alert-list"></div>
+      </div>
+
+      <!-- PRODUCTOS -->
+      <div class="tab" data-tab="productos">
+        <header class="content__head">
+          <h2>Productos</h2>
+          <input type="search" id="buscar-producto" placeholder="Buscar producto..." />
+          <button id="btn-nuevo-producto" class="btn btn--primary admin-only">+ Producto</button>
+        </header>
+        <div class="table-wrap">
+          <table id="tabla-productos">
+            <thead>
+              <tr><th>Código</th><th>Nombre</th><th>Laboratorio</th><th>Precio</th><th>Stock</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REGISTRAR VENTA -->
+      <div class="tab" data-tab="venta">
+        <header class="content__head"><h2>Registrar venta</h2></header>
+        <div class="panel" style="max-width:480px">
+          <form id="form-venta">
+            <label>Producto
+              <select id="venta-producto" required></select>
+            </label>
+            <label>Cantidad
+              <input type="number" id="venta-cantidad" min="1" value="1" required />
+            </label>
+            <div class="cart__total">Total estimado: <span id="venta-total">Bs 0.00</span></div>
+            <button type="submit" class="btn btn--primary btn--block">Cobrar venta</button>
+            <p id="venta-msg" class="error"></p>
+          </form>
+        </div>
+      </div>
+
+      <!-- VENTAS -->
+      <div class="tab" data-tab="ventas">
+        <header class="content__head"><h2>Historial de ventas</h2></header>
+        <div class="table-wrap">
+          <table id="tabla-ventas">
+            <thead><tr><th>#</th><th>Fecha</th><th>Producto</th><th>Cant.</th><th>P. unit</th><th>Total</th><th>Vendedor</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- MODAL PRODUCTO -->
+  <div id="modal-producto" class="modal hidden">
+    <form class="modal__card" id="form-producto">
+      <h3 id="modal-titulo">Nuevo producto</h3>
+      <input type="hidden" id="prod-id" />
+      <div class="grid-2">
+        <label>Código<input id="prod-codigo" required /></label>
+        <label>Nombre<input id="prod-nombre" required /></label>
+        <label>Laboratorio<input id="prod-laboratorio" /></label>
+        <label>Precio (Bs)<input id="prod-precio" type="number" step="0.01" min="0" value="0" /></label>
+        <label>Stock<input id="prod-stock" type="number" min="0" value="0" /></label>
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" id="cancelar-producto">Cancelar</button>
+        <button type="submit" class="btn btn--primary">Guardar</button>
+      </div>
+      <p id="prod-error" class="error"></p>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
